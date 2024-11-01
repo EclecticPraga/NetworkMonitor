@@ -16,174 +16,36 @@ import type { ApexOptions } from 'apexcharts';
 import { Chart } from '@/components/core/chart';
 import dayjs from 'dayjs';
 import { formatNumber } from '@/lib/numbers';
-
-const data = {
-  "data": [
-      {
-          "status": "default",
-          "queries": [
-              0,
-              0,
-              0,
-              14368,
-              12914,
-              45333,
-              54730,
-              30869,
-              28053,
-              22892,
-              19732,
-              26564,
-              26525,
-              17026,
-              6212,
-              9170,
-              6407,
-              9388,
-              6980,
-              8610,
-              5437,
-              3315,
-              5084,
-              6754,
-              7427,
-              7229,
-              6330,
-              1781,
-              4101
-          ]
-      },
-      {
-          "status": "blocked",
-          "queries": [
-              0,
-              0,
-              0,
-              732,
-              109,
-              2339,
-              1845,
-              1337,
-              448,
-              250,
-              818,
-              625,
-              596,
-              602,
-              125,
-              222,
-              92,
-              62,
-              40,
-              54,
-              53,
-              83,
-              27,
-              55,
-              186,
-              89,
-              44,
-              20,
-              20,
-             
-          ]
-      },
-      {
-          "status": "allowed",
-          "queries": [
-              0,
-              0,
-              0,
-              0,
-              0,
-              0,
-              0,
-              28,
-              31,
-              5,
-              19,
-              9,
-              35,
-              17,
-              0,
-              8,
-              1,
-              1,
-              0,
-              0,
-              0,
-              9,
-              0,
-              0,
-              0,
-              4,
-              0,
-              0,
-              0,
-          ]
-      }
-  ],
-  "meta": {
-      "series": {
-          "times": [
-              "2024-07-27T05:15:18.233Z",
-              "2024-07-28T05:15:18.233Z",
-              "2024-07-29T05:15:18.233Z",
-              "2024-07-30T05:15:18.233Z",
-              "2024-07-31T05:15:18.233Z",
-              "2024-08-01T05:15:18.233Z",
-              "2024-08-02T05:15:18.233Z",
-              "2024-08-03T05:15:18.233Z",
-              "2024-08-04T05:15:18.233Z",
-              "2024-08-05T05:15:18.233Z",
-              "2024-08-06T05:15:18.233Z",
-              "2024-08-07T05:15:18.233Z",
-              "2024-08-08T05:15:18.233Z",
-              "2024-08-09T05:15:18.233Z",
-              "2024-08-10T05:15:18.233Z",
-              "2024-08-11T05:15:18.233Z",
-              "2024-08-12T05:15:18.233Z",
-              "2024-08-13T05:15:18.233Z",
-              "2024-08-14T05:15:18.233Z",
-              "2024-08-15T05:15:18.233Z",
-              "2024-08-16T05:15:18.233Z",
-              "2024-08-17T05:15:18.233Z",
-              "2024-08-18T05:15:18.233Z",
-              "2024-08-19T05:15:18.233Z",
-              "2024-08-20T05:15:18.233Z",
-              "2024-08-21T05:15:18.233Z",
-              "2024-08-22T05:15:18.233Z",
-              "2024-08-23T05:15:18.233Z",
-              "2024-08-24T05:15:18.233Z",
-          ],
-          "interval": 86400
-      },
-      "pagination": {
-          "cursor": null
-      }
-  }
-};
+import { NextDnsQueriesResponse, useNextDns } from '@/lib/hooks/api/nextdns';
 
 export interface NextDnsQueriesProps {
-  chartSeries: { name: string; data: number[] }[];
   sx?: SxProps;
 }
 
 export function NextDnsQueries({ sx }: NextDnsQueriesProps): React.JSX.Element {
+  const { data, response: { meta } = {}, mutate } = useNextDns<
+    NextDnsQueriesResponse['data'],
+    NextDnsQueriesResponse
+  >('analytics/status;series?interval=86400&from=-1w');
+
   const chartSeries = React.useMemo(() => {
-    return data.data.map(({status, queries}) => ({
+    return data?.map(({status, queries}) => ({
       name: status,
       data: queries
-    }))
-  }, []);
-  console.log(chartSeries);
-  const chartOptions = useChartOptions(data.meta.series.times);
+    })) || [];
+  }, [data]);
+  const chartOptions = useChartOptions(meta?.series.times);
 
   return (
     <Card sx={sx}>
       <CardHeader
         action={
-          <Button color="inherit" size="small" startIcon={<ArrowClockwiseIcon fontSize="var(--icon-fontSize-md)" />}>
+          <Button
+            color="inherit"
+            size="small"
+            startIcon={<ArrowClockwiseIcon fontSize="var(--icon-fontSize-md)" />}
+            onClick={mutate}
+          >
             Sync
           </Button>
         }
@@ -202,11 +64,11 @@ export function NextDnsQueries({ sx }: NextDnsQueriesProps): React.JSX.Element {
   );
 }
 
-function useChartOptions(labelsData: string[]): ApexOptions {
+function useChartOptions(labelsData?: string[]): ApexOptions {
   const theme = useTheme();
 
   return React.useMemo(() => {
-    const categories = labelsData.map((time) => dayjs(time).format('MMM DD'));
+    const categories = (labelsData || []).map((time) => dayjs(time).format('MMM DD'));
 
     return {
       chart: { background: 'transparent', stacked: false, toolbar: { show: false } },

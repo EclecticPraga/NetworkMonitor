@@ -12,10 +12,29 @@ import { TotalCustomers } from '@/components/dashboard/overview/total-customers'
 import { TotalProfit } from '@/components/dashboard/overview/total-profit';
 import { Traffic } from '@/components/dashboard/overview/traffic';
 import { NextDnsQueries } from '@/components/dashboard/overview/next-dns-queries';
+import { NextDnsDevicesData, useNextDns } from '@/lib/hooks/api/nextdns';
+import { fetchNextDns } from '../api/nextdns/[...slug]/route';
 
 export const metadata = { title: `Overview | Dashboard | ${config.site.name}` } satisfies Metadata;
 
-export default function Page(): React.JSX.Element {
+export default async function Page(): Promise<React.JSX.Element> {
+  const { data: trafficData } = await fetchNextDns<
+    {data?: NextDnsDevicesData}
+  >('analytics/devices?from=-1w', { cache: 'no-cache' });
+
+  const trafficChartData = trafficData?.map(({ id, name, queries }) => {
+    let label = name || id;
+    if(label === '__UNIDENTIFIED__') {
+      label = 'Unidentified';
+    }
+
+    return {
+      label,
+      value: queries,
+      // icon: id === 'desktop' ? DesktopIcon : id === 'tablet' ? DeviceTabletIcon : PhoneIcon
+    }
+  }) || [];
+
   return (
     <Grid container spacing={3}>
       <Grid lg={3} sm={6} xs={12}>
@@ -31,12 +50,13 @@ export default function Page(): React.JSX.Element {
         <TotalProfit sx={{ height: '100%' }} value="$15k" />
       </Grid>
       <Grid lg={8} xs={12}>
-        <NextDnsQueries
-          sx={{ height: '100%' }}
-        />
+        <NextDnsQueries sx={{ height: '100%' }} />
       </Grid>
       <Grid lg={4} md={6} xs={12}>
-        <Traffic chartSeries={[63, 15, 22]} labels={['Desktop', 'Tablet', 'Phone']} sx={{ height: '100%' }} />
+        <Traffic
+          data={trafficChartData}
+          sx={{ height: '100%' }}
+        />
       </Grid>
       <Grid lg={4} md={6} xs={12}>
         <LatestProducts
