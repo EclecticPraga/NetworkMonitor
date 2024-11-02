@@ -16,15 +16,29 @@ import type { ApexOptions } from 'apexcharts';
 
 import { Chart } from '@/components/core/chart';
 
-const iconMapping = { Desktop: DesktopIcon, Tablet: DeviceTabletIcon, Phone: PhoneIcon } as Record<string, Icon>;
+export type ChartData = {
+  label: string;
+  value: number;
+  icon?: Icon;
+}
 
 export interface TrafficProps {
-  chartSeries: number[];
-  labels: string[];
+  data: ChartData[];
   sx?: SxProps;
 }
 
-export function Traffic({ chartSeries, labels, sx }: TrafficProps): React.JSX.Element {
+export function Traffic({ data, sx }: TrafficProps): React.JSX.Element {
+  const [labels, chartSeries] = React.useMemo(() =>
+    data.reduce(
+      ([l, s], { label, value }) => {
+        return [
+          [...l, label],
+          [...s, value]
+        ]
+      },
+      [[], []] as [string[], number[]]
+    ) 
+  , [data]);
   const chartOptions = useChartOptions(labels);
 
   return (
@@ -36,14 +50,15 @@ export function Traffic({ chartSeries, labels, sx }: TrafficProps): React.JSX.El
           <Stack direction="row" spacing={2} sx={{ alignItems: 'center', justifyContent: 'center' }}>
             {chartSeries.map((item, index) => {
               const label = labels[index];
-              const Icon = iconMapping[label];
+              const Icon = undefined;
+              // const Icon = iconMapping[label];
 
               return (
                 <Stack key={label} spacing={1} sx={{ alignItems: 'center' }}>
-                  {Icon ? <Icon fontSize="var(--icon-fontSize-lg)" /> : null}
-                  <Typography variant="h6">{label}</Typography>
+                  {/* {Icon ? <Icon fontSize="var(--icon-fontSize-lg)" /> : null} */}
+                  <Typography overflow="hidden" variant="h6">{label}</Typography>
                   <Typography color="text.secondary" variant="subtitle2">
-                    {item}%
+                    {item}
                   </Typography>
                 </Stack>
               );
@@ -60,7 +75,13 @@ function useChartOptions(labels: string[]): ApexOptions {
 
   return {
     chart: { background: 'transparent' },
-    colors: [theme.palette.primary.main, theme.palette.success.main, theme.palette.warning.main],
+    colors: [
+      theme.palette.primary.main,
+      theme.palette.success.main,
+      theme.palette.warning.main,
+      theme.palette.info.main,
+      theme.palette.grey[300],
+    ],
     dataLabels: { enabled: false },
     labels,
     legend: { show: false },
